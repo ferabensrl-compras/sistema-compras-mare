@@ -1,0 +1,8 @@
+/* src/index.css */
+/* Este archivo solo importa los estilos principales de MARÉ */
+@import './styles/mare.css';
+
+/* 
+  Aquí puedes agregar estilos adicionales específicos 
+  de páginas o componentes si lo necesitas
+*/

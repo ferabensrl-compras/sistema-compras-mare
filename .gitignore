@@ -1,0 +1,59 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Environment variables
+.env
+.env.local
+.env.production.local
+.env.development.local
+
+# Backup files
+*.backup
+*_backup*
+*_ROTO*
+
+# SQL temporary files
+*.sql.bak
+diagnostico*
+verificar*
+*temporal*
+
+# Documentation drafts
+RESUMEN_*
+DOCUMENTACION_*
+PROPUESTA_*
+PLAN_*
+TESTING_*
+AUDITORIA_*
+MODULO_*
+
+# Test files
+*.test.*
+test-*
+*-test.*
+
+# OS files
+Thumbs.db
+.DS_Store
