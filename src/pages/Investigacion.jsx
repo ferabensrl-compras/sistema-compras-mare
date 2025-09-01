@@ -43,24 +43,71 @@ export default function Investigacion() {
     categoria: ''
   });
 
-  // Categorías predefinidas
-  const categorias = [
+  // Categorías base (se amplían dinámicamente)
+  const [categorias, setCategorias] = useState([
     'Hair Accessories',
-    'Watches',
+    'Watches', 
     'Jewelry',
     'Bags',
     'Sunglasses',
     'Belts',
     'Scarves',
     'Hats',
-    'Electronics Accessories',
+    'Electronics',
     'Home Decor',
+    'Fashion Accessories',
+    'Beauty Products',
+    'Phone Accessories',
     'Others'
-  ];
+  ]);
+
+  // Estados para el selector inteligente de categorías
+  const [categoriaInput, setCategoriaInput] = useState('');
+  const [showCategoriaDropdown, setShowCategoriaDropdown] = useState(false);
+  const [categoriasFiltradas, setCategoriasFiltradas] = useState([]);
 
   useEffect(() => {
     cargarInvestigaciones();
   }, []);
+
+  // Filtrar categorías según input del usuario
+  const filtrarCategorias = (texto) => {
+    if (!texto.trim()) {
+      setCategoriasFiltradas([]);
+      return;
+    }
+    
+    const filtradas = categorias.filter(cat => 
+      cat.toLowerCase().includes(texto.toLowerCase())
+    );
+    setCategoriasFiltradas(filtradas);
+  };
+
+  // Manejar input de categoría
+  const manejarInputCategoria = (valor) => {
+    setCategoriaInput(valor);
+    setCurrentItem({...currentItem, categoria: valor});
+    filtrarCategorias(valor);
+    setShowCategoriaDropdown(true);
+  };
+
+  // Seleccionar categoría del dropdown
+  const seleccionarCategoria = (categoria) => {
+    setCategoriaInput(categoria);
+    setCurrentItem({...currentItem, categoria: categoria});
+    setShowCategoriaDropdown(false);
+    setCategoriasFiltradas([]);
+  };
+
+  // Crear nueva categoría
+  const crearNuevaCategoria = (nuevaCategoria) => {
+    const categoriaLimpia = nuevaCategoria.trim();
+    if (categoriaLimpia && !categorias.includes(categoriaLimpia)) {
+      const nuevasCategorias = [...categorias, categoriaLimpia].sort();
+      setCategorias(nuevasCategorias);
+      seleccionarCategoria(categoriaLimpia);
+    }
+  };
 
   const cargarInvestigaciones = async () => {
     try {
@@ -146,13 +193,14 @@ export default function Investigacion() {
     }
 
     // Convertir producto de OC a formato de investigación
+    const categoriaProducto = producto.categoria || 'Others';
     const nuevoItem = {
       tipo: 'imagen',
       url: '',
       imagen_base64: producto.imagenes?.[0] || '', // Primera imagen
       descripcion: `Repetir de ${numeroOC}: ${producto.notas || ''}`,
       nombre_tentativo: producto.nombre || 'Producto sin nombre',
-      categoria: producto.categoria || 'Others',
+      categoria: categoriaProducto,
       // Agregar referencias del producto original
       codigo_producto_original: producto.codigo_producto,
       codigo_proveedor_original: producto.codigo_proveedor,
@@ -281,8 +329,13 @@ export default function Investigacion() {
         imagen_base64: '',
         descripcion: '',
         nombre_tentativo: '',
-        categoria: currentItem.categoria // Mantener la categoría
+        categoria: ''
       });
+      
+      // Reset estados de categoría
+      setCategoriaInput('');
+      setShowCategoriaDropdown(false);
+      setCategoriasFiltradas([]);
 
       setShowForm(false);
     } catch (error) {
@@ -564,7 +617,11 @@ export default function Investigacion() {
                   <ShoppingCart size={20} />
                   Desde OC
                 </button>
-                <button onClick={() => setShowForm(true)} className="btn-mare">
+                <button onClick={() => {
+                  setShowForm(true);
+                  // Sincronizar estado de categoría cuando se abre el formulario
+                  setCategoriaInput(currentItem.categoria || '');
+                }} className="btn-mare">
                   <Plus size={20} />
                   Agregar Item
                 </button>
@@ -719,20 +776,86 @@ export default function Investigacion() {
                 </div>
               )}
 
-              {/* Categoría */}
-              <div className="mb-4">
+              {/* Categoría inteligente */}
+              <div className="mb-4 relative">
                 <label className="block text-sm font-medium mb-2">Categoría *</label>
-                <select
-                  value={currentItem.categoria}
-                  onChange={(e) => setCurrentItem({...currentItem, categoria: e.target.value})}
-                  className="select-mare"
+                <input
+                  type="text"
+                  value={categoriaInput}
+                  onChange={(e) => manejarInputCategoria(e.target.value)}
+                  onFocus={() => {
+                    filtrarCategorias(categoriaInput);
+                    setShowCategoriaDropdown(true);
+                  }}
+                  onBlur={() => {
+                    // Delay para permitir clicks en dropdown
+                    setTimeout(() => setShowCategoriaDropdown(false), 200);
+                  }}
+                  className="input-mare"
+                  placeholder="Buscar o crear nueva categoría..."
                   required
-                >
-                  <option value="">Seleccionar categoría...</option>
-                  {categorias.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
+                />
+                
+                {/* Dropdown de categorías */}
+                {showCategoriaDropdown && (
+                  <div className="absolute top-full left-0 right-0 bg-white border-2 border-gray-400 rounded-md shadow-xl z-50"
+                       style={{ 
+                         backgroundColor: 'white', 
+                         zIndex: 9999, 
+                         maxHeight: '300px', 
+                         overflowY: 'auto',
+                         scrollbarWidth: 'thin',
+                         scrollbarColor: '#CBD5E0 #F7FAFC'
+                       }}>
+                    {/* Mostrar categorías filtradas */}
+                    {categoriasFiltradas.length > 0 ? (
+                      categoriasFiltradas.map(cat => (
+                        <div
+                          key={cat}
+                          className="px-4 py-3 hover:bg-blue-50 hover:text-blue-700 cursor-pointer text-sm border-b border-gray-100 transition-colors"
+                          onClick={() => seleccionarCategoria(cat)}
+                          style={{ backgroundColor: 'white' }}
+                        >
+                          📁 {cat}
+                        </div>
+                      ))
+                    ) : categoriaInput.trim() ? (
+                      <div
+                        className="px-4 py-3 hover:bg-green-50 cursor-pointer text-sm text-green-700 font-medium border-l-4 border-green-500 transition-colors"
+                        onClick={() => crearNuevaCategoria(categoriaInput)}
+                        style={{ backgroundColor: 'white' }}
+                      >
+                        ✨ Crear nueva: "{categoriaInput.trim()}"
+                      </div>
+                    ) : (
+                      <div className="px-4 py-3 text-sm text-gray-500 italic" style={{ backgroundColor: 'white' }}>
+                        💡 Escribe para buscar o crear categoría...
+                      </div>
+                    )}
+                    
+                    {/* Mostrar todas las categorías si no hay filtro */}
+                    {!categoriaInput.trim() && (
+                      <>
+                        <div className="px-4 py-2 text-xs text-gray-500 font-semibold border-b-2 border-gray-200 bg-gray-50" style={{ backgroundColor: '#f9fafb' }}>
+                          📋 Categorías disponibles:
+                        </div>
+                        {categorias.map((cat, index) => (
+                          <div
+                            key={cat}
+                            className="px-4 py-3 hover:bg-blue-50 hover:text-blue-700 cursor-pointer text-sm border-b border-gray-100 transition-colors"
+                            onClick={() => seleccionarCategoria(cat)}
+                            style={{ backgroundColor: 'white' }}
+                          >
+                            📁 {cat}
+                          </div>
+                        ))}
+                        <div className="px-4 py-2 text-xs text-gray-400 text-center bg-gray-50" style={{ backgroundColor: '#f9fafb' }}>
+                          📊 {categorias.length} categorías disponibles
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Nombre tentativo */}
