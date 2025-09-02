@@ -69,7 +69,8 @@ export default function OrdenesCompra() {
         .from('ordenes_compra')
         .select(`
           *,
-          proveedor:proveedores(id, nombre, contacto)
+          proveedor:proveedores(id, nombre, contacto),
+          embarque:embarques(id, codigo, estado)
         `)
         .order('created_at', { ascending: false });
       
@@ -415,6 +416,7 @@ export default function OrdenesCompra() {
       dataHeader.push(['']);
       dataHeader.push(['Order Number:', selectedOrden.numero]);
       dataHeader.push(['Supplier:', selectedOrden.proveedor?.nombre || '']);
+      dataHeader.push(['Embarque / Shipment:', selectedOrden.embarque?.codigo || 'N/A']);
       dataHeader.push(['Date:', new Date(selectedOrden.fecha).toLocaleDateString()]);
       dataHeader.push(['Status:', selectedOrden.estado]);
       dataHeader.push(['Total FOB USD:', `$${selectedOrden.total_fob.toFixed(2)}`]);
@@ -622,6 +624,7 @@ NOTA: Las imágenes editadas están integradas en el proceso. Para enviar las im
       
       const infoBox = [
         `Supplier: ${selectedOrden.proveedor?.nombre || 'N/A'}`,
+        `Embarque / Shipment: ${selectedOrden.embarque?.codigo || 'N/A'}`,
         `Date: ${new Date(selectedOrden.fecha).toLocaleDateString()}`,
         `Status: ${selectedOrden.estado.toUpperCase()}`,
         `Total FOB: $${selectedOrden.total_fob.toFixed(2)} USD`
@@ -950,6 +953,10 @@ NOTA: Las imágenes editadas están integradas en el proceso. Para enviar las im
                 <div class="info-item">
                     <div class="info-label">Proveedor / Supplier</div>
                     <div class="info-value">${selectedOrden.proveedor?.nombre || 'N/A'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Embarque / Shipment</div>
+                    <div class="info-value">${selectedOrden.embarque?.codigo || 'N/A'}</div>
                 </div>
                 <div class="info-item">
                     <div class="info-label">Fecha / Date</div>
@@ -1525,6 +1532,12 @@ Revisa tu carpeta de Descargas.\`);
                       <span>{new Date(orden.fecha).toLocaleDateString()}</span>
                     </div>
                     <div className="flex justify-between">
+                      <span style={{ color: 'var(--texto-secundario)' }}>Embarque:</span>
+                      <span className="font-medium" style={{ color: 'var(--marron-oscuro)' }}>
+                        {orden.embarque?.codigo || 'Sin asignar'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
                       <span style={{ color: 'var(--texto-secundario)' }}>Items:</span>
                       <span className="font-medium">{orden.productos?.length || 0}</span>
                     </div>
@@ -1563,10 +1576,10 @@ Revisa tu carpeta de Descargas.\`);
                 <h2 className="text-2xl font-playfair">{selectedOrden.numero}</h2>
                 <p style={{ color: 'var(--texto-secundario)' }}>
                   {selectedOrden.proveedor?.nombre} • {new Date(selectedOrden.fecha).toLocaleDateString()}
-                  {selectedOrden.embarque_id && (
+                  {selectedOrden.embarque?.codigo && (
                     <span>
                       <br />
-                      🚢 Embarque: {embarques.find(e => e.id === selectedOrden.embarque_id)?.codigo || 'Desconocido'}
+                      🚢 Embarque: <span style={{ fontWeight: 'bold', color: 'var(--marron-oscuro)' }}>{selectedOrden.embarque.codigo}</span> ({selectedOrden.embarque.estado})
                     </span>
                   )}
                 </p>
