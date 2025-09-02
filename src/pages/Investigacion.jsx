@@ -44,7 +44,7 @@ export default function Investigacion() {
   });
 
   // Categorías base (se amplían dinámicamente)
-  const [categorias, setCategorias] = useState([
+  const categoriasBase = [
     'Hair Accessories',
     'Watches', 
     'Jewelry',
@@ -59,7 +59,25 @@ export default function Investigacion() {
     'Beauty Products',
     'Phone Accessories',
     'Others'
-  ]);
+  ];
+
+  // Cargar categorías desde localStorage o usar las base
+  const cargarCategoriasGuardadas = () => {
+    try {
+      const categoriasGuardadas = localStorage.getItem('mare-categorias-investigacion');
+      if (categoriasGuardadas) {
+        const categoriasParsed = JSON.parse(categoriasGuardadas);
+        // Combinar categorías base con las guardadas (sin duplicados)
+        const categoriasCombinadas = [...new Set([...categoriasBase, ...categoriasParsed])];
+        return categoriasCombinadas.sort();
+      }
+    } catch (error) {
+      console.warn('Error cargando categorías de localStorage:', error);
+    }
+    return categoriasBase;
+  };
+
+  const [categorias, setCategorias] = useState(cargarCategoriasGuardadas);
 
   // Estados para el selector inteligente de categorías
   const [categoriaInput, setCategoriaInput] = useState('');
@@ -103,12 +121,20 @@ export default function Investigacion() {
     setCategoriasFiltradas([]);
   };
 
-  // Crear nueva categoría
+  // Crear nueva categoría y guardar en localStorage
   const crearNuevaCategoria = (nuevaCategoria) => {
     const categoriaLimpia = nuevaCategoria.trim();
     if (categoriaLimpia && !categorias.includes(categoriaLimpia)) {
       const nuevasCategorias = [...categorias, categoriaLimpia].sort();
       setCategorias(nuevasCategorias);
+      
+      // Guardar en localStorage
+      try {
+        localStorage.setItem('mare-categorias-investigacion', JSON.stringify(nuevasCategorias));
+      } catch (error) {
+        console.warn('Error guardando categorías en localStorage:', error);
+      }
+      
       seleccionarCategoria(categoriaLimpia);
     }
   };
