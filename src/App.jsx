@@ -10,14 +10,12 @@ import {
   Search,
   Menu,
   X,
-  Home,
-  TestTube
+  Home
 } from 'lucide-react';
 import './styles/mare.css';
 import { NotificationProvider } from './components/NotificationSystem';
 
 // Páginas principales (SIN módulos de supplier)
-import TestConnection from './pages/TestConnection';
 import Productos from './pages/Productos';
 import Proveedores from './pages/Proveedores';
 import Investigacion from './pages/Investigacion';
@@ -42,7 +40,6 @@ const Sidebar = ({ isOpen, setIsOpen, setCurrentPage }) => {
     { id: 'costos', label: 'Costos', icon: Calculator },
     { id: 'reportes', label: 'Reportes', icon: BarChart3 },
     { id: 'proveedores', label: 'Proveedores', icon: Users },
-    { id: 'test', label: 'Probar Conexión', icon: TestTube },
     { id: 'analizador', label: '🔍 Analizar Excel', icon: FileText },
   ];
 
@@ -116,7 +113,6 @@ const App = () => {
   // Título de página según selección
   const getPageTitle = () => {
     switch(currentPage) {
-      case 'test': return 'Prueba de Conexión';
       case 'productos': return 'Catálogo de Productos';
       case 'proveedores': return 'Proveedores';
       case 'investigacion': return 'Investigación de Productos';
@@ -133,8 +129,6 @@ const App = () => {
   // Renderizar página según selección
   const renderPage = () => {
     switch(currentPage) {
-      case 'test':
-        return <TestConnection />;
       case 'productos':
         return <Productos />;
       case 'proveedores':
