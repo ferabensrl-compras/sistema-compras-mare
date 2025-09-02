@@ -66,6 +66,10 @@ export default function Investigacion() {
   const [showCategoriaDropdown, setShowCategoriaDropdown] = useState(false);
   const [categoriasFiltradas, setCategoriasFiltradas] = useState([]);
 
+  // Estados para edición
+  const [editingItem, setEditingItem] = useState(null);
+  const [editingIndex, setEditingIndex] = useState(null);
+
   useEffect(() => {
     cargarInvestigaciones();
   }, []);
@@ -368,20 +372,82 @@ export default function Investigacion() {
     }
   };
 
-  // Cargar imagen y convertir a base64
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCurrentItem({
-          ...currentItem,
-          imagen_base64: reader.result
-        });
-      };
-      reader.readAsDataURL(file);
+  // Iniciar edición de item
+  const iniciarEdicionItem = (item, index) => {
+    setEditingItem({ ...item });
+    setEditingIndex(index);
+    setCategoriaInput(item.categoria || '');
+    setShowForm(true);
+  };
+
+  // Guardar cambios en item editado
+  const guardarEdicionItem = async () => {
+    if (!selectedInvestigacion || editingIndex === null) return;
+    
+    if (!editingItem.categoria) {
+      alert('Por favor selecciona una categoría');
+      return;
+    }
+
+    if (editingItem.tipo === 'url' && !editingItem.url) {
+      alert('Por favor ingresa una URL');
+      return;
+    }
+
+    if (editingItem.tipo === 'imagen' && !editingItem.imagen_base64) {
+      alert('Por favor selecciona una imagen');
+      return;
+    }
+
+    try {
+      const nuevosItems = [...selectedInvestigacion.items];
+      nuevosItems[editingIndex] = editingItem;
+      
+      const { error } = await supabase
+        .from('investigaciones')
+        .update({ items: nuevosItems })
+        .eq('id', selectedInvestigacion.id);
+
+      if (error) throw error;
+
+      // Actualizar estado local
+      setSelectedInvestigacion({
+        ...selectedInvestigacion,
+        items: nuevosItems
+      });
+
+      // Limpiar estados de edición
+      setEditingItem(null);
+      setEditingIndex(null);
+      setCategoriaInput('');
+      setShowCategoriaDropdown(false);
+      setCategoriasFiltradas([]);
+      setShowForm(false);
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al guardar cambios');
     }
   };
+
+  // Cancelar edición
+  const cancelarEdicion = () => {
+    setEditingItem(null);
+    setEditingIndex(null);
+    setCategoriaInput('');
+    setShowCategoriaDropdown(false);
+    setCategoriasFiltradas([]);
+    setShowForm(false);
+    // Restaurar currentItem a valores por defecto
+    setCurrentItem({
+      tipo: 'url',
+      url: '',
+      imagen_base64: '',
+      descripcion: '',
+      nombre_tentativo: '',
+      categoria: ''
+    });
+  };
+
 
   // Exportar a Excel con hojas por categoría y hoja separada para repeticiones
   const exportarExcel = async () => {
@@ -679,13 +745,23 @@ export default function Investigacion() {
                             {item.descripcion || 'Sin descripción'}
                           </p>
 
-                          {/* Botón eliminar */}
-                          <button
-                            onClick={() => eliminarItem(item.index)}
-                            className="absolute top-2 right-2 p-1 bg-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
-                          >
-                            <Trash2 size={16} className="text-red-600" />
-                          </button>
+                          {/* Botones de acción */}
+                          <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => iniciarEdicionItem(item, item.index)}
+                              className="p-1 bg-white rounded-lg shadow-md hover:bg-blue-50"
+                              title="Editar item"
+                            >
+                              <Edit size={16} className="text-blue-600" />
+                            </button>
+                            <button
+                              onClick={() => eliminarItem(item.index)}
+                              className="p-1 bg-white rounded-lg shadow-md hover:bg-red-50"
+                              title="Eliminar item"
+                            >
+                              <Trash2 size={16} className="text-red-600" />
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -715,7 +791,9 @@ export default function Investigacion() {
             overflow: 'hidden'
           }}>
             <div className="p-6">
-              <h3 className="text-xl font-playfair mb-4">Agregar Item</h3>
+              <h3 className="text-xl font-playfair mb-4">
+                {editingItem ? 'Editar Item' : 'Agregar Item'}
+              </h3>
               
               {/* Tipo de item */}
               <div className="flex gap-4 mb-4">
@@ -724,8 +802,14 @@ export default function Investigacion() {
                     type="radio"
                     name="tipo"
                     value="url"
-                    checked={currentItem.tipo === 'url'}
-                    onChange={(e) => setCurrentItem({...currentItem, tipo: e.target.value})}
+                    checked={(editingItem || currentItem).tipo === 'url'}
+                    onChange={(e) => {
+                      if (editingItem) {
+                        setEditingItem({...editingItem, tipo: e.target.value});
+                      } else {
+                        setCurrentItem({...currentItem, tipo: e.target.value});
+                      }
+                    }}
                     style={{ accentColor: 'var(--marron-oscuro)' }}
                   />
                   <Link size={20} />
@@ -736,8 +820,14 @@ export default function Investigacion() {
                     type="radio"
                     name="tipo"
                     value="imagen"
-                    checked={currentItem.tipo === 'imagen'}
-                    onChange={(e) => setCurrentItem({...currentItem, tipo: e.target.value})}
+                    checked={(editingItem || currentItem).tipo === 'imagen'}
+                    onChange={(e) => {
+                      if (editingItem) {
+                        setEditingItem({...editingItem, tipo: e.target.value});
+                      } else {
+                        setCurrentItem({...currentItem, tipo: e.target.value});
+                      }
+                    }}
                     style={{ accentColor: 'var(--marron-oscuro)' }}
                   />
                   <Image size={20} />
@@ -746,13 +836,19 @@ export default function Investigacion() {
               </div>
 
               {/* URL o carga de imagen */}
-              {currentItem.tipo === 'url' ? (
+              {(editingItem || currentItem).tipo === 'url' ? (
                 <div className="mb-4">
                   <label className="block text-sm font-medium mb-2">URL de la imagen</label>
                   <input
                     type="url"
-                    value={currentItem.url}
-                    onChange={(e) => setCurrentItem({...currentItem, url: e.target.value})}
+                    value={(editingItem || currentItem).url}
+                    onChange={(e) => {
+                      if (editingItem) {
+                        setEditingItem({...editingItem, url: e.target.value});
+                      } else {
+                        setCurrentItem({...currentItem, url: e.target.value});
+                      }
+                    }}
                     className="input-mare"
                     placeholder="https://ejemplo.com/imagen.jpg"
                   />
@@ -763,12 +859,25 @@ export default function Investigacion() {
                   <input
                     type="file"
                     accept="image/*"
-                    onChange={handleImageUpload}
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          if (editingItem) {
+                            setEditingItem({...editingItem, imagen_base64: reader.result});
+                          } else {
+                            setCurrentItem({...currentItem, imagen_base64: reader.result});
+                          }
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
                     className="input-mare"
                   />
-                  {currentItem.imagen_base64 && (
+                  {(editingItem || currentItem).imagen_base64 && (
                     <img 
-                      src={currentItem.imagen_base64} 
+                      src={(editingItem || currentItem).imagen_base64} 
                       alt="Preview" 
                       className="mt-2 w-32 h-32 object-cover rounded-lg"
                     />
@@ -782,7 +891,12 @@ export default function Investigacion() {
                 <input
                   type="text"
                   value={categoriaInput}
-                  onChange={(e) => manejarInputCategoria(e.target.value)}
+                  onChange={(e) => {
+                    manejarInputCategoria(e.target.value);
+                    if (editingItem) {
+                      setEditingItem({...editingItem, categoria: e.target.value});
+                    }
+                  }}
                   onFocus={() => {
                     filtrarCategorias(categoriaInput);
                     setShowCategoriaDropdown(true);
@@ -863,8 +977,14 @@ export default function Investigacion() {
                 <label className="block text-sm font-medium mb-2">Nombre tentativo</label>
                 <input
                   type="text"
-                  value={currentItem.nombre_tentativo}
-                  onChange={(e) => setCurrentItem({...currentItem, nombre_tentativo: e.target.value})}
+                  value={(editingItem || currentItem).nombre_tentativo}
+                  onChange={(e) => {
+                    if (editingItem) {
+                      setEditingItem({...editingItem, nombre_tentativo: e.target.value});
+                    } else {
+                      setCurrentItem({...currentItem, nombre_tentativo: e.target.value});
+                    }
+                  }}
                   className="input-mare"
                   placeholder="Ej: Collar con perlas"
                 />
@@ -874,8 +994,14 @@ export default function Investigacion() {
               <div className="mb-6">
                 <label className="block text-sm font-medium mb-2">Descripción / Notas</label>
                 <textarea
-                  value={currentItem.descripcion}
-                  onChange={(e) => setCurrentItem({...currentItem, descripcion: e.target.value})}
+                  value={(editingItem || currentItem).descripcion}
+                  onChange={(e) => {
+                    if (editingItem) {
+                      setEditingItem({...editingItem, descripcion: e.target.value});
+                    } else {
+                      setCurrentItem({...currentItem, descripcion: e.target.value});
+                    }
+                  }}
                   className="input-mare"
                   rows="3"
                   placeholder="Detalles adicionales..."
@@ -885,16 +1011,16 @@ export default function Investigacion() {
               {/* Botones */}
               <div className="flex justify-end gap-3">
                 <button 
-                  onClick={() => setShowForm(false)}
+                  onClick={cancelarEdicion}
                   className="btn-mare-secondary"
                 >
                   Cancelar
                 </button>
                 <button 
-                  onClick={agregarItem}
+                  onClick={editingItem ? guardarEdicionItem : agregarItem}
                   className="btn-mare"
                 >
-                  Agregar Item
+                  {editingItem ? 'Guardar Cambios' : 'Agregar Item'}
                 </button>
               </div>
             </div>
