@@ -1,0 +1,31 @@
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    # Ejecutar cada 5 días a las 8:00 AM UTC
+    - cron: '0 8 */5 * *'
+  workflow_dispatch: # Permite ejecución manual
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Ping Supabase Database
+        run: |
+          echo "Enviando ping a Supabase para mantener proyecto activo..."
+
+          # Hacer consulta simple a la base de datos
+          curl -X POST \
+            "${{ secrets.VITE_SUPABASE_URL }}/rest/v1/rpc/ping" \
+            -H "apikey: ${{ secrets.VITE_SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.VITE_SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json"
+
+          echo "✅ Ping completado exitosamente"
+          echo "Fecha: $(date)"
+
+      - name: Keep-alive log
+        run: |
+          echo "🤖 Sistema MARÉ - Keep-alive ejecutado"
+          echo "Próxima ejecución programada en 5 días"
